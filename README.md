@@ -16,19 +16,15 @@ This project implements a **Virtual Disk File System** that allows users to crea
 
 1. Clone the repository:
    ```bash
-   git clone <your-repository-link>
-   cd <your-project-folder>
+   git clone https://github.com/vickspanda/vDisk.git
+   cd vDisk
    ```
 
-2. Compile the source code (Assuming the code is in C):
+2. Compile the source code:
    ```bash
-   gcc vdCreate.c -o vdCreate
-   gcc vdAddFile.c -o vdAddFile
-   gcc vdDetails.c -o vdDetails
-   gcc vdls.c -o vdls
-   gcc vdGet.c -o vdGet
-   gcc vdDelete.c -o vdDelete
+   make
    ```
+   After compilation a binary file named `myDisk` of size 4 MB will be created by default, which acts as the virtual disk. But you can create your own too, if you want to.
 
 ## Usage
 
@@ -41,9 +37,9 @@ To create a new virtual disk, run the following command:
 
 Example:
 ```bash
-./vdCreate myDisk 100
+./vdCreate myDisk 10
 ```
-This will create a binary file named `myDisk` of size 100 MB, which acts as the virtual disk.
+This will create a binary file named `myDisk` of size 10 MB, which acts as the virtual disk.
 
 ### 2. Adding Files to the Virtual Disk
 To add files to the virtual disk:
@@ -59,7 +55,7 @@ Example:
 This will add `file1.txt` and `file2.pdf` to `myDisk` unless they already exist.
 
 ### 3. Viewing Disk Details
-To see details such as disk name, size, available space, and used space:
+To see details such as disk name, disk size, free space and used space:
 
 ```bash
 ./vdDetails <your-disk>
@@ -93,7 +89,7 @@ Example:
 ```bash
 ./vdGet myDisk file1.txt file2.pdf
 ```
-This will copy `file1.txt` and `file2.pdf` from `myDisk` to your current working directory.
+This will copy `file1.txt` and `file2.pdf` from `myDisk` to your current working directory if they exists in `myDisk`.
 
 ### 6. Deleting Files from the Virtual Disk
 To delete files from the virtual disk:
@@ -112,10 +108,3 @@ After deletion, the disk will undergo automatic **compaction**, ensuring that fi
 
 - If a file already exists in the disk, it will not be added again during the `vdAddFile` operation.
 - During file deletion, compaction ensures that there are no holes left in the disk space.
-  
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-This README provides clear instructions on how to use each function with examples. You can customize it further as needed!
