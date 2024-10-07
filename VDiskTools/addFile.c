@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 		if(!file)
 		{
 			perror("Error ");
+			return 0;
 		}else
 			addFile(argv[1],file,argv[i+2]);
 		i++;

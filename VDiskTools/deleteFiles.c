@@ -43,7 +43,7 @@ void deleteEncodedSeq(FILE *rightSeqPointer, FILE *leftSeqPointer, unsigned int 
 
 
 /* This Function Removes the Data Part of the File from the Virtual Disk*/
-void replaceFileData(FILE *leftFilePointer, FILE *rightFilePointer, unsigned int curFileSize)
+void compaction(FILE *leftFilePointer, FILE *rightFilePointer, unsigned int curFileSize)
 {
 	for(unsigned long long int i=0; i < curFileSize; i++)
 	{
@@ -72,7 +72,7 @@ void deleteFileData(FILE *leftFilePointer,FILE *rightFilePointer, const char *fi
 		fseek(leftFilePointer,-1,SEEK_CUR);
 		fseek(rightFilePointer,-1,SEEK_CUR);
 		curFileSize = decode(encodedSeqPointer);
-		replaceFileData(leftFilePointer,rightFilePointer,curFileSize);
+		compaction(leftFilePointer,rightFilePointer,curFileSize);
 	}
 }
 
