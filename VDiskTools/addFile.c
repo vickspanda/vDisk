@@ -13,15 +13,15 @@
 int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 {
 	union decStore fileSize = getSize(inputFileName);
+	fileSize.num = fileSize.num + getSizeOfFileName(inputFileName);
 	unsigned char *out, countOfSeqBits, sizeOfOut;
 	unsigned int countOfFiles;
+	
 
 	/* Four File Pointers , one for countOfFiles, Second for encoded seq of sizes of files, third for file's names and Fourth for File's Data*/
 	FILE *countPointer = fopen(vDisk,"r+");
 
 	FILE *encodedSeqPointer = fopen(vDisk,"r+");
-	
-	FILE *fileNamePointer = fopen(vDisk,"r+");
 
 	FILE *fileDataPointer = fopen(vDisk,"r+");
 	
@@ -38,7 +38,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	sizeOfOut = bitsToBytes(countOfSeqBits);
 	/* bitsToBytes is the Function which takes Number of Bits and convert it into Number of Bytes */
 	
-	if(searchInFiles(fileNamePointer, encodedSeqPointer, countOfFiles, inputFileName)>=0)
+	if(searchInFiles(fileDataPointer, encodedSeqPointer, countOfFiles, inputFileName)>=0)
 	{
 		printf("Error: %s Already Exists !!!\n",inputFileName);
 		return 0;
@@ -48,7 +48,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	 * if not Found, then it returns -1
 	 */
 	 
-	if(!canBeAdded(vDisk, fileSize.num, encodedSeqPointer, countOfFiles, inputFileName, fileNamePointer))
+	if(!canBeAdded(vDisk, fileSize.num, encodedSeqPointer, countOfFiles))
 	{
 		printf("Error: Sufficient Space Not Available to Store %s !!!\n",inputFileName);
 		return 0;
@@ -71,13 +71,8 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	 * storeFileData is the Function which stores the data of *inputFile in the virtual Disk by 	
 	 * seting the file pointer and writing the content
 	 */
-	storeFileData(fileDataPointer, encodedSeqPointer, countOfFiles, fileSize, inputFile);
+	storeFileData(fileDataPointer, encodedSeqPointer, countOfFiles, fileSize, inputFile, inputFileName);
 
-	/*
-	 * storeNameData is the Function which stores the name of *inputFile in the virtual Disk by 
-	 * seting the file pointer and writing the content
-	 */
-	storeFileName(fileNamePointer, inputFileName, encodedSeqPointer, countOfFiles, fileSize);
 
 	/* updateNoOfFiles function updates the count and set it as 2nd Argument passed in it */
 	updateNoOfFilesInDisk(countPointer,countOfFiles+1);
@@ -89,7 +84,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	
 	fclose(fileDataPointer);
 	
-	fclose(fileNamePointer);
+	//fclose(fileNamePointer);
 	
 	printf("Success: %s Added Successfully !!!\n",inputFileName);
 	
@@ -124,8 +119,11 @@ int main(int argc, char *argv[])
 		i++;
 		/* CLosing All File Pointers */
         	fclose(file);
+        	
 	
 		/* addFile is the Function Responsible for Addition of the FIle in the Virtual Disk */
-	}	
+	}
+	
+		
 	return 0;
 }

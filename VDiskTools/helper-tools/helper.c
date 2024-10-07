@@ -195,6 +195,20 @@ void printEncodedSeq(unsigned char *out, unsigned char countOfBits)
 }
 
 /* 
+ * getSize is the function which returns the size of the file whose filename is passed
+ */
+union decStore getSize(const char *filename)
+{
+	union decStore size;
+	/* Opening the FILE */
+	FILE *file = fopen(filename,"r");
+	fseek(file,0,SEEK_END);
+	size.num  = ftello(file);
+	fclose(file);
+	return size;
+}
+
+/* 
  * isBinaryFile takes filename as input and tells whether the input File is Binary File or NOT
  */
 
@@ -208,11 +222,14 @@ int isBinaryFile(const char *filename)
 		printf("Error: Entered Virtual Disk Not Found!!!\n");
 		return 0;
 	}
+	
+	union decStore diskSize = getSize(filename);
 
 	int ch;
 	/* Check Byte by Byte */
-	while((ch = fgetc(file)) != EOF)
+	for(int i=0;i<diskSize.num;i++)
 	{
+		ch = fgetc(file);
 		if(!isprint(ch) && !isspace(ch))
 		{
 			fclose(file);
@@ -225,22 +242,5 @@ int isBinaryFile(const char *filename)
 	return 0;
 }
 
-/* 
- * getSize is the function which returns the size of the file whose filename is passed
- */
-union decStore getSize(const char *filename)
-{
-	/* Opening the FILE */
-	FILE *file = fopen(filename,"r");
-	char ch;
-	union decStore size;
-	size.num  = 0;
-	
-	/* Counting the Bytes  */
-	while((ch=fgetc(file))!=EOF)
-		size.num++;
-	return size;
-	fclose(file);
-}
 
 

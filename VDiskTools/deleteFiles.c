@@ -41,24 +41,11 @@ void deleteEncodedSeq(FILE *rightSeqPointer, FILE *leftSeqPointer, unsigned int 
 	
 }
 
-/* This Function Removes the Name Part of the File from the Virtual Disk*/
-void replaceFileName(FILE *leftFilePointer,FILE *rightFilePointer)
-{
-	char ch;
-	while((ch=fgetc(leftFilePointer))!='\n'){
-		fputc(ch,rightFilePointer);
-		fseek(leftFilePointer,-2,SEEK_CUR);
-		fseek(rightFilePointer,-2,SEEK_CUR);
-	}
-	fputc(ch,rightFilePointer);
-	fseek(leftFilePointer,-2,SEEK_CUR);
-	fseek(rightFilePointer,-2,SEEK_CUR);
-}
 
 /* This Function Removes the Data Part of the File from the Virtual Disk*/
 void replaceFileData(FILE *leftFilePointer, FILE *rightFilePointer, unsigned int curFileSize)
 {
-	for(unsigned int i=0; i < curFileSize; i++)
+	for(unsigned long long int i=0; i < curFileSize; i++)
 	{
 		fputc(fgetc(leftFilePointer),rightFilePointer);
 		fseek(leftFilePointer,-2,SEEK_CUR);
@@ -70,7 +57,6 @@ void replaceFileData(FILE *leftFilePointer, FILE *rightFilePointer, unsigned int
 /* deleteFileData Function Delete the File Data from the End Portion of the Virtual Disk */
 void deleteFileData(FILE *leftFilePointer,FILE *rightFilePointer, const char *fileName, int index, FILE *encodedSeqPointer, unsigned int countOfFiles)
 {
-	seekFileName(leftFilePointer);
 	fseek(rightFilePointer,0,SEEK_END);
 	fseek(encodedSeqPointer,4,SEEK_SET);
 	unsigned long long int curFileSize;
@@ -79,16 +65,14 @@ void deleteFileData(FILE *leftFilePointer,FILE *rightFilePointer, const char *fi
 		curFileSize = decode(encodedSeqPointer);
 		if(i<=(index-1)){
 			fseek(rightFilePointer,-curFileSize,SEEK_CUR);
-			seekFileName(rightFilePointer);
 		}
 	}
 	
-	fseek(leftFilePointer,-1,SEEK_CUR);
-	fseek(rightFilePointer,-1,SEEK_CUR);
 	for(int i=index+1; i < countOfFiles; i++){
+		fseek(leftFilePointer,-1,SEEK_CUR);
+		fseek(rightFilePointer,-1,SEEK_CUR);
 		curFileSize = decode(encodedSeqPointer);
 		replaceFileData(leftFilePointer,rightFilePointer,curFileSize);
-		replaceFileName(leftFilePointer,rightFilePointer);
 	}
 }
 

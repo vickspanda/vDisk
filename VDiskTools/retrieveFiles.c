@@ -18,10 +18,12 @@ void writeFile(FILE *fileNamePointer, const char *fileName, int index, FILE *enc
 	
 	for(int i=0; i<=index; i++)
 		curFileSize = decode(encodedSeqPointer);
-	
-	for(int i=0; i< curFileSize; i++)
+	int i=0;
+	while(fgetc(fileNamePointer)!='\0')
+		i++;
+	for(i = i+1; i<curFileSize; i++)
 		fputc(fgetc(fileNamePointer),getFile);
-		
+
 	fseek(encodedSeqPointer,0,SEEK_SET);
 	fclose(getFile);
 	printf("Success: %s Retrieved Successfully !!!\n",fileName);
@@ -49,7 +51,7 @@ int main(int argc, char *argv[])
 	
 	FILE *encodedSeqPointer = fopen(argv[1],"r");
 
-	FILE *fileNamePointer = fopen(argv[1],"r");
+	FILE *fileDataPointer = fopen(argv[1],"r");
 	
 	countOfFiles = getNoOfFilesInDisk(countPointer);
 	// getNoOfFilesInDisk returns count of Existing Files in the Virtual Disk
@@ -63,11 +65,11 @@ int main(int argc, char *argv[])
 	while(i!=(argc-2))
 	{
 		// searchInFiles returns the Index of the File in the Virtual Disk if exists, else it will return -1
-		int index = searchInFiles(fileNamePointer, encodedSeqPointer, countOfFiles, argv[i+2]);
+		int index = searchInFiles(fileDataPointer, encodedSeqPointer, countOfFiles, argv[i+2]);
 		if(index==-1)
 			printf("Error : %s File Does Not Exists in %s !!!\n",argv[i+2],argv[1]);
 		else
-			writeFile(fileNamePointer,argv[i+2],index, encodedSeqPointer);
+			writeFile(fileDataPointer,argv[i+2],index, encodedSeqPointer);
 		i++;
 	}
 	
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 	
 	fclose(encodedSeqPointer);
 	
-	fclose(fileNamePointer);
+	fclose(fileDataPointer);
 	
 	return 0;
 }

@@ -13,28 +13,28 @@
 int printFileName(FILE *fileNamePointer)
 {
 	char ch;
+	int count = 0;
 	while((ch=fgetc(fileNamePointer))!='\0')
+	{
 		printf("%c",ch);
+		count++;
+	}
+	fseek(fileNamePointer,-(count+1),SEEK_CUR);
+	printf("\n");
 }
 
 /* listFileNames displays all the Files Exists in the Virtual Disk by Setting the Pointer At the End of the File Name, Then at start and pass it
  * to printFileName Function
  */
-int listFileNames(FILE *fileNamePointer, FILE *encodedSeqPointer, unsigned int countOfFiles)
+int listFileNames(FILE *fileDataPointer, FILE *encodedSeqPointer, unsigned int countOfFiles)
 {
 	unsigned long long int curFileSize;
 	fseek(encodedSeqPointer,4,SEEK_CUR);
 	for(int i = 0; i < countOfFiles; i++){
 		curFileSize = decode(encodedSeqPointer);
-		fseek(fileNamePointer,-curFileSize,SEEK_CUR);
-		/*
-		 * seekFileName is the Function Which takes the fileNamePointer at Start of the File name from the current Location
-		 */
-		seekFileName(fileNamePointer);
-		printFileName(fileNamePointer);
-		seekFileName(fileNamePointer);
+		fseek(fileDataPointer,-curFileSize,SEEK_CUR);
+		printFileName(fileDataPointer);
 	}
-	printf("\n");
 }
 
 /* It is the Main Function for vdls Operation which deals with all kinds of Validations for Input */
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	/* File Pointers for file's names*/
 	FILE *countPointer = fopen(argv[1],"r");
 	
-	FILE *fileNamePointer = fopen(argv[1],"r");
+	FILE *fileDataPointer = fopen(argv[1],"r");
 	
 	FILE *encodedSeqPointer = fopen(argv[1],"r");
 	
@@ -68,18 +68,19 @@ int main(int argc, char *argv[])
 		printf("Disk is Empty !!!\n");
 	}
 	else{
-		printf("Disk Name:\t%s\nFiles In Disk are:",argv[1]);
+		printf("Disk Name:\t%s\nFiles In Disk are:\n",argv[1]);
 		
-		fseek(fileNamePointer,0,SEEK_END);
+		fseek(fileDataPointer,0,SEEK_END);
 		
 		// listFileNames displays all the Files Exists in the Virtual Disk
-		listFileNames(fileNamePointer, encodedSeqPointer, countOfFiles);
+		listFileNames(fileDataPointer, encodedSeqPointer, countOfFiles);
 	
 	}
 	
 	/* CLosing All File Pointers */
 	
-	fclose(fileNamePointer);
+	fclose(fileDataPointer);
+	fclose(encodedSeqPointer);
 	
 	return 0;
 	

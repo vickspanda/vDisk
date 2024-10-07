@@ -29,20 +29,18 @@ int main(int argc, char *argv[])
 	printf("Disk Size:\t%llu bytes\n",diskSize.num);
 	
 	/* Disk Pointer for Disk's Details*/
-	FILE *diskPointer = fopen(argv[1],"r");
+	FILE *countPointer = fopen(argv[1],"r");
 	
 	FILE *encodedSeqPointer = fopen(argv[1],"r");
 	
 	unsigned int countOfFiles;
 	
-	countOfFiles = getNoOfFilesInDisk(diskPointer);
+	countOfFiles = getNoOfFilesInDisk(countPointer);
 	// getNoOfFilesInDisk returns count of Existing Files in the Virtual Disk
 	
 	unsigned long long int usedSpace;
-	
-	fseek(diskPointer,0,SEEK_END);
 		
-	usedSpace = getUsedSpace(diskPointer, encodedSeqPointer, countOfFiles);	
+	usedSpace = getUsedSpace(encodedSeqPointer, countOfFiles);	
 	/*
 	 * getUsedSpace Function returns the usedSpace in Virtual Disk whose file Pointer was provided as an input to it
 	 */
@@ -54,7 +52,9 @@ int main(int argc, char *argv[])
 	printf("Free Space:\t%llu bytes\n",getFreeSpace(usedSpace ,argv[1]));
 	
 	/* CLosing Disk Pointer */
-	fclose(diskPointer);
+	fclose(countPointer);
+	
+	fclose(encodedSeqPointer);
 	
 	return 0;
 }
