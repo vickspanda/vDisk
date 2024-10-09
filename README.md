@@ -121,5 +121,5 @@ After deletion, the disk will undergo automatic **compaction**, ensuring that fi
 ## Notes
 
 - If a file already exists in the disk, it will not be added again during the `vdAddFile` operation.
-- If a file already exists in the virtual disk with new file name or if the extension of new file name is different with old file name, then it will not allow rename operation.
+- If a file already exists in the virtual disk with new file name or if the extension of new file name is different as of old file name, then it will not allow rename operation.
 - During file deletion, compaction ensures that there are no holes left in the disk space.
