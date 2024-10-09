@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	/* Validating Number of Arguments */
 	if(argc != 3)
 	{
-		printf("Error: Invalid Number of Arguments\n");
+		printf("Error : Invalid Number of Arguments\n");
 		return 0;
 	}
 	
@@ -65,13 +65,13 @@ int main(int argc, char *argv[])
 	char * sizeChar = argv[2];
 	/* Checking if 3 argument is Integer or not */
 	if(!checkIfInt(sizeChar)){
-                        printf("Error: Invalid Input for Number of Breaks\n");
+                        printf("Error : Invalid Input for Number of Breaks\n");
                         return 0;
         }
 
 	/* If File is not opened then Error will be Displayed */
 	if(!file){
-		perror("Error: ");
+		perror("Error ");
 		return 0;
 	}
 	

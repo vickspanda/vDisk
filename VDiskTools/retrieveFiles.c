@@ -26,7 +26,7 @@ void writeFile(FILE *fileNamePointer, const char *fileName, int index, FILE *enc
 
 	fseek(encodedSeqPointer,0,SEEK_SET);
 	fclose(getFile);
-	printf("Success: %s Retrieved Successfully !!!\n",fileName);
+	printf("Success : %s Retrieved Successfully !!!\n",fileName);
 }
 
 /* It is the Main Function for vdGet Operation which deals with all kinds of Validations for Input */
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	/* Validating Number of Arguments */
 	if(argc<3)
 	{
-		printf("Error: Invalid Number of Arguments Passed!!!\n");
+		printf("Error : Invalid Number of Arguments Passed!!!\n");
 		return 0;
 	}
 

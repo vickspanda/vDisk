@@ -151,7 +151,7 @@ bool setEncodedSeqPointerToWrite(FILE *encodedSeqPointer,unsigned int countOfFil
 	}
 	for(int i = 0; i < countOfFiles; i++){
 		curFileSize = decode(encodedSeqPointer);
-	};
+	}
 	return true;
 }
 
@@ -266,4 +266,28 @@ int searchInFiles(FILE *fileDataPointer, FILE *encodedSeqPointer, unsigned int c
 	}
 	fseek(encodedSeqPointer,0,SEEK_SET);
 	return -1;
+}
+
+/*
+ * getSizeOfFileAtIndex returns the file size at particular Index in the Virtual Disk
+ */
+unsigned long long int getSizeOfFileAtIndex(FILE *encodedSeqPointer,int index)
+{
+	unsigned long long int curFileSize;
+	fseek(encodedSeqPointer,4,SEEK_SET);
+	for(unsigned int i=0; i<index+1; i++)
+		curFileSize = decode(encodedSeqPointer);
+	return curFileSize;
+} 
+
+
+/* This Function returns the extension of the file*/
+void getFileExtension(const char *filename, char *extension) {
+	// Find the last occurrence of the '.' character
+	const char *dot = strrchr(filename, '.');
+	if (dot != NULL) {
+		strcpy(extension, dot + 1); 
+	} else {
+		strcpy(extension, "");
+	}
 }

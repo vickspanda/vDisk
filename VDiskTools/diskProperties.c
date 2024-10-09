@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	/* Validating Number of Arguments */
 	if(argc!=2)
 	{
-		printf("Error: Invalid Number of Arguments Passed!!!\n");
+		printf("Error : Invalid Number of Arguments Passed!!!\n");
 		return 0;
 	}
 	

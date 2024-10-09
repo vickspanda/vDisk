@@ -13,6 +13,7 @@ unsigned long long int decode(FILE *encodedSeqPointer)
 	data.num = 0;
 	while(1)			/* while will be running till actual data is not retrieved */
 	{
+		
 		/*
 		 * if handles the condition if checkBit is 0,
 		 * It implies that till now we have not got actual length of the data
@@ -59,25 +60,32 @@ unsigned long long int decode(FILE *encodedSeqPointer)
 			/*
 			 * This if handles to read all length bits to get data
 			 */
-			if(length!=0)
+			
+			/* when the data will be retrieved, then automatically will get out of the while loop */
+			if(length==0){
+				return data.num;
+			}
+			else
 			{
 				data.numInChar[size-1] = data.numInChar[size-1] << 1;
 				data.numInChar[size-1] = data.numInChar[size-1] | (1 & (out >> (remBits)));
 				length--;
 				remBitsForData--;
 			}
-			/* when the data will be retrieved, then automatically will get out of the while loop */
-			else
-				break;
 		}
 		/* if remBits becomes zero, it will be updated to 8 and offset for out will also get incremented, 
 		 * in every iteration remBits is getting decremented
 		 */
+		 
 		if(remBits==0){
-			remBits = 8;
-			out = fgetc(encodedSeqPointer);
+			if(length==0 && checkBit == 1)
+				;
+			else
+			{
+				remBits = 8;
+				out = fgetc(encodedSeqPointer);
+			}
 		}
 		remBits--;
 	}
-	return data.num;
 }

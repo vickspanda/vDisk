@@ -51,6 +51,8 @@ void compaction(FILE *leftFilePointer, FILE *rightFilePointer, unsigned int curF
 		fseek(leftFilePointer,-2,SEEK_CUR);
 		fseek(rightFilePointer,-2,SEEK_CUR);
 	}
+	fseek(leftFilePointer,1,SEEK_CUR);
+	fseek(rightFilePointer,1,SEEK_CUR);
 }
 
 
@@ -84,7 +86,7 @@ int main(int argc, char *argv[])
 	/* Validating Number of Arguments */
 	if(argc<3)
 	{
-		printf("Error: Invalid Number of Arguments Passed!!!\n");
+		printf("Error : Invalid Number of Arguments Passed!!!\n");
 		return 0;
 	}
 

@@ -27,8 +27,6 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	
 	countOfFiles = getNoOfFilesInDisk(countPointer);
 	// getNoOfFilesInDisk returns count of Existing Files in the Virtual Disk
-
-	unsigned long long int existingFilesSizes[countOfFiles];
 	
 	out = (unsigned char *)calloc(11,sizeof(unsigned char));
 
@@ -40,7 +38,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	
 	if(searchInFiles(fileDataPointer, encodedSeqPointer, countOfFiles, inputFileName)>=0)
 	{
-		printf("Error: %s Already Exists !!!\n",inputFileName);
+		printf("Error : %s Already Exists !!!\n",inputFileName);
 		return 0;
 	}
 	/*
@@ -50,7 +48,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	 
 	if(!canBeAdded(vDisk, fileSize.num, encodedSeqPointer, countOfFiles))
 	{
-		printf("Error: Sufficient Space Not Available to Store %s !!!\n",inputFileName);
+		printf("Error : Sufficient Space Not Available to Store %s !!!\n",inputFileName);
 		return 0;
 	}
 	
@@ -86,7 +84,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	
 	//fclose(fileNamePointer);
 	
-	printf("Success: %s Added Successfully !!!\n",inputFileName);
+	printf("Success : %s Added Successfully !!!\n",inputFileName);
 	
 	return 0;
 
@@ -99,7 +97,7 @@ int main(int argc, char *argv[])
 	/* Validating Number of Arguments */
 	if(argc<3)
 	{
-		printf("Error: Invalid Number of Arguments Passed!!!\n");
+		printf("Error : Invalid Number of Arguments Passed!!!\n");
 		return 0;
 	}
 
@@ -114,12 +112,14 @@ int main(int argc, char *argv[])
 		if(!file)
 		{
 			perror("Error ");
-			return 0;
 		}else
+		{
 			addFile(argv[1],file,argv[i+2]);
+			
+			/* CLosing All File Pointers */
+        		fclose(file);
+		}
 		i++;
-		/* CLosing All File Pointers */
-        	fclose(file);
         	
 	
 		/* addFile is the Function Responsible for Addition of the FIle in the Virtual Disk */
