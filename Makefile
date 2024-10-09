@@ -6,3 +6,4 @@ final:
 	gcc VDiskTools/listFiles.c -o vdls
 	gcc VDiskTools/retrieveFiles.c -o vdGet
 	gcc VDiskTools/deleteFiles.c -o vdDelete
+	gcc VDiskTools/renameFile.c -o vdRename
