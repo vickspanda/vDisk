@@ -10,6 +10,7 @@ This project implements a **Virtual Disk File System** that allows users to crea
 - **vdDetails**: View the details of the virtual disk, such as used and available space.
 - **vdls**: List all files stored in the virtual disk.
 - **vdGet**: Retrieve files from the virtual disk to the current directory.
+- **vdRename**: Renames files from old name to new name in the virtual disk with automatic space compaction.
 - **vdDelete**: Delete files from the virtual disk with automatic space compaction.
 
 ## Installation
@@ -91,7 +92,20 @@ Example:
 ```
 This will copy `file1.txt` and `file2.pdf` from `myDisk` to your current working directory if they exists in `myDisk`.
 
-### 6. Deleting Files from the Virtual Disk
+### 6. Rename Files in the Virtual Disk
+To rename files in the virtual disk:
+
+```bash
+./vdRename <your-disk> <old-file-name> <new-file-name>
+```
+
+Example:
+```bash
+./vdRename myDisk file1.txt newfile.txt
+```
+After rename, file1.txt will be named as newfile.txt
+
+### 7. Deleting Files from the Virtual Disk
 To delete files from the virtual disk:
 
 ```bash
@@ -107,4 +121,5 @@ After deletion, the disk will undergo automatic **compaction**, ensuring that fi
 ## Notes
 
 - If a file already exists in the disk, it will not be added again during the `vdAddFile` operation.
+- If a file already exists in the virtual disk with new file name or if the extension of new file name is different with old file name, then it will not allow rename operation.
 - During file deletion, compaction ensures that there are no holes left in the disk space.
