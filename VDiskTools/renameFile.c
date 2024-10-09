@@ -109,6 +109,7 @@ void shiftEncodedSeq(FILE *rightSeqPointer, FILE *leftSeqPointer, int offset, un
 	for(int i=0;i<index;i++)
 		curFileSize.num = decode(leftSeqPointer);
 	writeEncodedSeqOnDisk(leftSeqPointer, out, sizeOfOut);
+	free(out);
 }
 
 

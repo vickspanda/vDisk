@@ -82,7 +82,7 @@ int addFile(const char *vDisk, FILE *inputFile, const char *inputFileName)
 	
 	fclose(fileDataPointer);
 	
-	//fclose(fileNamePointer);
+	free(out);
 	
 	printf("Success : %s Added Successfully !!!\n",inputFileName);
 	
