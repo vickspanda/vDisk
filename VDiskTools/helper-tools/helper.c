@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<ctype.h>
 #include<string.h>
+
 /*
  * This is the union which is used to store the unsigned long long int and allows to use that as array of unsigned char
  */

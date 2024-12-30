@@ -4,6 +4,12 @@
 #include"decode.c"
 
 
+void skipName(FILE *metaDataPointer)
+{
+	while(fgetc(metaDataPointer)!='\0');
+}
+
+
 int getSizeOfFileName(const char *fileName)
 {
 	
@@ -43,24 +49,46 @@ unsigned int getLengthOfFileName(FILE *fileNamePointer){
 	int countChars = 0;
 	while((ch=fgetc(fileNamePointer))!='\0')
 		countChars++;
-	fseek(fileNamePointer,-(countChars+1),SEEK_CUR);
 	return countChars+1;
 }
 
 /*
  * getUsedSpace Function returns the usedSpace in Virtual Disk whose file Pointer was provided as an input to it
  */
-unsigned long long int getUsedSpace(FILE *encodedSeqPointer, unsigned int countOfFiles)
+unsigned long long int getUsedSpace(FILE *metaDataPointer, unsigned int countOfFiles)
 {
-	fseek(encodedSeqPointer,4,SEEK_SET);
-	unsigned long long int usedSpace = 0, curFileSize;
+	fseek(metaDataPointer,4,SEEK_SET);
+	unsigned long long int usedSpace = 0, curFileSize, fileNameLength;
 	for(int i = 0; i < countOfFiles; i++){
-		curFileSize = decode(encodedSeqPointer);
-		usedSpace = usedSpace + calCountOfBytesSeq(curFileSize) + curFileSize;
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)!=0)
+			fileNameLength = getLengthOfFileName(metaDataPointer);
+		else
+			fileNameLength = 0;
+		usedSpace = usedSpace + calCountOfBytesSeq(curFileSize) + curFileSize + fileNameLength + 1;
 	}
 	usedSpace = usedSpace + 4;
-	fseek(encodedSeqPointer,0,SEEK_SET);	
+	fseek(metaDataPointer,0,SEEK_SET);	
 	return usedSpace;
+}
+
+
+/*
+ * getHolesSpace Function returns the Holes Space in Virtual Disk whose file Pointer was provided as an input to it
+ */
+unsigned long long int getHolesSpace(FILE *metaDataPointer, unsigned int countOfFiles)
+{
+	fseek(metaDataPointer,4,SEEK_SET);
+	unsigned long long int holesSpace = 0, curFileSize;
+	for(int i = 0; i < countOfFiles; i++){
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==0)
+			holesSpace = holesSpace + curFileSize;
+		else
+			skipName(metaDataPointer);
+	}
+	fseek(metaDataPointer,0,SEEK_SET);	
+	return holesSpace;
 }
 
 /*
@@ -77,10 +105,10 @@ unsigned long long int getFreeSpace(unsigned long long int usedSpace, const char
  * whose file Pointer was provided as an input to it
  * Actual Space means : File Size, File Name Size, and Encoded File Size
  */
-unsigned long long int getReqSpace(unsigned long long int fileSize)
+unsigned long long int getReqSpace(unsigned long long int fileSize, const char *inputFileName)
 {
 	unsigned long long int reqSpace = calCountOfBytesSeq(fileSize);
-	return reqSpace + fileSize;
+	return reqSpace + fileSize + strlen(inputFileName) + 2;
 }
 
 /*
@@ -88,15 +116,32 @@ unsigned long long int getReqSpace(unsigned long long int fileSize)
  * have the Space to Add new File in it
  * else returns false
  */
-bool canBeAdded(const char *vDiskName, unsigned long long int fileSize, FILE *encodedSeqPointer, unsigned int countOfFiles)
+bool canBeAdded(const char *vDiskName, unsigned long long int fileSize, FILE *metaDataPointer, unsigned int countOfFiles, const char *inputFileName)
 {
-	if(getFreeSpace(getUsedSpace(encodedSeqPointer, countOfFiles),vDiskName) > getReqSpace(fileSize))
-		return true;
-	else
-		return false;
+	return getFreeSpace(getUsedSpace(metaDataPointer, countOfFiles),vDiskName) >= getReqSpace(fileSize,inputFileName);
 }
 
 
+
+/*
+* canBeAddedInHoles Function returns true if Virtual Disk whose file Pointer was provided as an input to it
+* have the Space in Form of Holes to Add new File in it	
+* else returns false
+*/
+bool canBeAddedInHoles(const char *vDiskName, unsigned long long int fileSize, FILE *metaDataPointer, unsigned int countOfFiles, const char *inputFileName)
+{
+	return getHolesSpace(metaDataPointer,countOfFiles)  >= (getReqSpace(fileSize,inputFileName) - calCountOfBytesSeq(fileSize));
+}
+
+/*
+* canBeAddedInHolesWithFreeSpace Function returns true if Virtual Disk whose file Pointer was provided as an input to it
+* have the Space in Form of Holes along with the Free Space to Add new File in it	
+* else returns false
+*/
+bool canBeAddedInHolesWithFreeSpace(const char *vDiskName, unsigned long long int fileSize, FILE *metaDataPointer, unsigned int countOfFiles, const char *inputFileName)
+{
+	return (getHolesSpace(metaDataPointer,countOfFiles) + getFreeSpace(getUsedSpace(metaDataPointer, countOfFiles),vDiskName)) >= getReqSpace(fileSize,inputFileName);
+}
 
 /*
  * getEncodedSeqOfFileSize returns the count Of bits of Encoded Seq Of file Size passed in it and prepares the encoded Sequence
@@ -130,6 +175,27 @@ int getNoOfFilesInDisk(FILE *countPointer)
 	return count;
 }
 
+
+/*
+ * getNoOfFilesInDisk function returns the count of files present in the Virtual Disk
+ */
+int getNoOfHolesInDisk(FILE *metaDataPointer, int countOfFiles)
+{
+	int count=0;
+	
+	fseek(metaDataPointer,4,SEEK_SET);
+	for(int i=0;i<countOfFiles;i++)
+	{
+		decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==1)
+			skipName(metaDataPointer);
+		else
+			count++;
+	}
+	fseek(metaDataPointer,4,SEEK_SET);
+	return count;
+}
+
 /*
  * updateNoOfFiles function updates the count and set it as 2nd Argument passed in it
  */
@@ -143,57 +209,67 @@ void updateNoOfFilesInDisk(FILE *countPointer, int count)
 /*
  * setEncodedSeqPointerToWrite is the Function, which repositions the file Pointer to correct position for writing the Encoded Sequence
  */
-bool setEncodedSeqPointerToWrite(FILE *encodedSeqPointer,unsigned int countOfFiles)
+bool setMetaDataPointerToWrite(FILE *metaDataPointer,unsigned int countOfFiles)
 {
 	unsigned long long int curFileSize;
-	if(fseek(encodedSeqPointer,4,SEEK_SET)!=0){
+	if(fseek(metaDataPointer,4,SEEK_SET)!=0){
 		return false;
 	}
 	for(int i = 0; i < countOfFiles; i++){
-		curFileSize = decode(encodedSeqPointer);
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==1)
+			skipName(metaDataPointer);
 	}
 	return true;
 }
 
 
 /*
- * writeEncodedSeqOnDisk is the Function which writes the encoded Seq present in *out in the virtual Disk
+ * writeMetaDataOnDisk is the Function which writes the encoded Seq present in *out followed by respective File Name in the virtual Disk
  */
-bool writeEncodedSeqOnDisk(FILE *encodedSeqPointer, unsigned char *out, unsigned char sizeOfOut)
+bool writeMetaDataOnDisk(FILE *metaDataPointer, unsigned char *out, unsigned char sizeOfOut, const char *inputFileName)
 {	
 	for(int i=0; i<sizeOfOut; i++)
-		if(fputc(*(out+i),encodedSeqPointer) == EOF)
+		if(fputc(*(out+i),metaDataPointer) == EOF)
 			return false;
+
+	fputc(1,metaDataPointer);
+	int i=0;
+	while(inputFileName[i]!='\0')
+		fputc(inputFileName[i++],metaDataPointer);
+	fputc('\0',metaDataPointer);
 	return true;
 }
 
 /*
- * storeEncodedSeq is the Function which stores the encoded Seq present in *out in the virtual Disk by 
+ * storeMetaDataSeq is the Function which stores the encoded Seq and respective File Name present in *out in the virtual Disk by 
  * seting the file pointer and writing the content
  */
-bool storeEncodedSeq(FILE *encodedSeqPointer, unsigned char *out, unsigned char sizeOfOut, unsigned int countOfFiles)
+bool storeMetaData(FILE *metaDataPointer, unsigned char *out, unsigned char sizeOfOut, unsigned int countOfFiles, const char *inputFileName)
 {
-	if(!setEncodedSeqPointerToWrite( encodedSeqPointer, countOfFiles))
-		printf("Error in Setting the Encoded Sequence pointer !!!\n");
+	if(!setMetaDataPointerToWrite(metaDataPointer, countOfFiles))
+		printf("Error in Setting the Meta Data pointer !!!\n");
 
-	if(!writeEncodedSeqOnDisk(encodedSeqPointer, out, sizeOfOut))
-		printf("Error in Writing the Encoded Sequence !!!\n");
+	if(!writeMetaDataOnDisk(metaDataPointer, out, sizeOfOut, inputFileName))
+		printf("Error in Writing the Meta Data Sequence !!!\n");
 		
-	fseek(encodedSeqPointer,0,SEEK_SET);
+	fseek(metaDataPointer,0,SEEK_SET);
 }
 
 /*
  * setFileDataPointerToWrite is the Function, which repositions the file Pointer to correct position for writing the Data of the Input File
  */
-bool setFileDataPointerToWrite(FILE *fileDataPointer,FILE *encodedSeqPointer,unsigned int countOfFiles, union decStore fileSize)
+bool setFileDataPointerToWrite(FILE *fileDataPointer,FILE *metaDataPointer,unsigned int countOfFiles, union decStore fileSize)
 {
 	unsigned long long int curFileSize;
-	if(fseek(encodedSeqPointer,4,SEEK_SET)!=0){
+	if(fseek(metaDataPointer,4,SEEK_SET)!=0){
 		return false;
 	}
 	fseek(fileDataPointer,0,SEEK_END);
 	for(int i = 0; i < countOfFiles; i++){
-		curFileSize = decode(encodedSeqPointer);
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==1)
+			skipName(metaDataPointer);
 		fseek(fileDataPointer,-curFileSize,SEEK_CUR);
 	}
 	fseek(fileDataPointer,-fileSize.num,SEEK_CUR);
@@ -203,16 +279,10 @@ bool setFileDataPointerToWrite(FILE *fileDataPointer,FILE *encodedSeqPointer,uns
 /*
  * writeFileDataOnDisk is the Function which writes the Data present in *inputFile in the virtual Disk
  */
-bool writeFileDataOnDisk(FILE *fileDataPointer,FILE *inputFile, const char * inputFileName, unsigned long long fileSize)
+bool writeFileDataOnDisk(FILE *fileDataPointer,FILE *inputFile, unsigned long long fileSize)
 {
 	char ch;
-	int i = 0;
-	
-	while(inputFileName[i] != '\0')
-		fputc(inputFileName[i++],fileDataPointer);
-	fputc('\0',fileDataPointer);
-	
-	for(i=i+1; i<fileSize; i++)
+	for(int i=0; i<fileSize; i++)
 		fputc(fgetc(inputFile),fileDataPointer);
 }
 
@@ -221,13 +291,13 @@ bool writeFileDataOnDisk(FILE *fileDataPointer,FILE *inputFile, const char * inp
  * storeFileData is the Function which stores the data of *inputFile in the virtual Disk by 
  * seting the file pointer and writing the content along with the fileName
  */
-bool storeFileData(FILE *fileDataPointer,FILE *encodedSeqPointer,unsigned int countOfFiles, union decStore fileSize, FILE *inputFile, const char *inputFileName)
+bool storeFileData(FILE *fileDataPointer,FILE *metaDataPointer,unsigned int countOfFiles, union decStore fileSize, FILE *inputFile)
 {
-	setFileDataPointerToWrite( fileDataPointer, encodedSeqPointer, countOfFiles, fileSize);
+	setFileDataPointerToWrite( fileDataPointer, metaDataPointer, countOfFiles, fileSize);
 	
-	writeFileDataOnDisk(fileDataPointer, inputFile, inputFileName, fileSize.num);
+	writeFileDataOnDisk(fileDataPointer, inputFile, fileSize.num);
 	
-	fseek(encodedSeqPointer,0,SEEK_SET);
+	fseek(metaDataPointer,0,SEEK_SET);
 }
 
 
@@ -235,10 +305,9 @@ bool storeFileData(FILE *fileDataPointer,FILE *encodedSeqPointer,unsigned int co
  * searchInFiles returns the Index of the File in the Virtual Disk if exists,
  * if not Found, then it returns -1
  */
-int searchInFiles(FILE *fileDataPointer, FILE *encodedSeqPointer, unsigned int countOfFiles, const char *inputFileName)
+int searchInFiles(FILE *metaDataPointer, unsigned int countOfFiles, const char *inputFileName)
 {	
-	fseek(fileDataPointer,0,SEEK_END);
-	fseek(encodedSeqPointer,4,SEEK_SET);
+	fseek(metaDataPointer,4,SEEK_SET);
 	
 	unsigned long long int curFileSize = 12;
 	
@@ -246,37 +315,39 @@ int searchInFiles(FILE *fileDataPointer, FILE *encodedSeqPointer, unsigned int c
 	
 	for(int i = 0; i < countOfFiles; i++){
 		
-		curFileSize = decode(encodedSeqPointer);
+		curFileSize = decode(metaDataPointer);
+				
+		if(fgetc(metaDataPointer)==1)
+		{
+			fileNameSize = getLengthOfFileName(metaDataPointer);
+			fseek(metaDataPointer,-fileNameSize,SEEK_CUR);
+			
+			char fileName[fileNameSize];
 		
-		fseek(fileDataPointer,-(curFileSize),SEEK_CUR);
+			for(int j = 0; j < fileNameSize; j++)
+				fileName[j] = fgetc(metaDataPointer);
 		
-		fileNameSize = getLengthOfFileName(fileDataPointer);
-		
-		char fileName[fileNameSize];
-		
-		for(int j = 0; j < fileNameSize; j++)
-			fileName[j] = fgetc(fileDataPointer);
-
-		fseek(fileDataPointer,-(fileNameSize),SEEK_CUR);
-		
-		if(strcmp(fileName,inputFileName)== 0){
-			fseek(encodedSeqPointer,0,SEEK_SET);
-			return i;
+			if(strcmp(fileName,inputFileName)== 0){
+				fseek(metaDataPointer,-fileNameSize,SEEK_CUR);
+				return i;
+			}
 		}
 	}
-	fseek(encodedSeqPointer,0,SEEK_SET);
 	return -1;
 }
 
 /*
  * getSizeOfFileAtIndex returns the file size at particular Index in the Virtual Disk
  */
-unsigned long long int getSizeOfFileAtIndex(FILE *encodedSeqPointer,int index)
+unsigned long long int getSizeOfFileAtIndex(FILE *metaDataPointer,int index)
 {
 	unsigned long long int curFileSize;
-	fseek(encodedSeqPointer,4,SEEK_SET);
-	for(unsigned int i=0; i<index+1; i++)
-		curFileSize = decode(encodedSeqPointer);
+	fseek(metaDataPointer,4,SEEK_SET);
+	for(unsigned int i=0; i<index+1; i++){
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==1)
+			skipName(metaDataPointer);
+	}
 	return curFileSize;
 } 
 
@@ -290,4 +361,144 @@ void getFileExtension(const char *filename, char *extension) {
 	} else {
 		strcpy(extension, "");
 	}
+}
+
+
+// Merge Consecutive Holes
+// First Portion is Written to execute the Merging of two consecutive Holes 
+// So that Bytes requiured to store the consecutive Holes will be reduced
+
+
+/* This Function Updates the meta Data Part of the File from the Virtual Disk, if After Renaming, size of new encoded Seq of Size is lesser than Size of previous Encoded Sequence */
+void replaceSeq(FILE *leftSeqPointer,FILE *rightSeqPointer,unsigned char bytes)
+{
+	char ch;
+	for(unsigned int i=0; i<bytes; i++)
+		fputc(fgetc(rightSeqPointer),leftSeqPointer);
+}
+
+
+/*
+ * writeMetaDataOnDisk is the Function which writes the encoded Seq present in *out followed by respective File Name in the virtual Disk
+ */
+bool writeMetaData(FILE *metaDataPointer, unsigned char *out, unsigned char sizeOfOut)
+{	
+	for(int i=0; i<sizeOfOut; i++)
+		if(fputc(*(out+i),metaDataPointer) == EOF)
+			return false;
+
+	fputc(0,metaDataPointer);
+	return true;
+}
+
+
+/*After Loading each Data About Files in the Arrays, Actual Merging Happens in this Function */
+void mergeHoles(FILE * leftMetaPointer, FILE * rightMetaPointer, unsigned long long int fileSizeArray[], int fileNameSizeArray[], int metaArray[], unsigned int countOfFiles)
+{
+    int flag = 0, leftIndex, rightIndex;
+    union decStore newSumSize;
+    newSumSize.num = 0;
+    unsigned char *out, countOfSeqBits, sizeOfOut;
+
+    for(int i=0;i<countOfFiles;i++)
+    {
+        if(fileNameSizeArray[i]==1 && flag==0)
+        {
+            flag = 1;
+            leftIndex = i;
+        }
+
+        if(fileNameSizeArray[i]==1 && flag == 1)
+            newSumSize.num = newSumSize.num + fileSizeArray[i];
+
+        if(fileNameSizeArray[i]!=1 && flag==1)
+        {
+            rightIndex = i-1;
+
+            if(leftIndex < rightIndex)
+            {   
+                fseek(leftMetaPointer,4,SEEK_SET);
+                fseek(rightMetaPointer,4,SEEK_SET);
+
+                out = (unsigned char *)calloc(11,sizeof(unsigned char));
+
+                countOfSeqBits = getEncodedSeqOfFileSize(out,newSumSize);
+                /* getEncodedSeqOfFileSize returns the count Of bits of Encoded Seq Of file Size passed in it and prepares the encoded Sequence */
+
+                sizeOfOut = bitsToBytes(countOfSeqBits);
+                /* bitsToBytes is the Function which takes Number of Bits and convert it into Number of Bytes */
+
+                for(int i=0;i<leftIndex;i++)
+                    fseek(leftMetaPointer,metaArray[i]+fileNameSizeArray[i],SEEK_CUR);
+
+                for(int i=0;i<=rightIndex;i++)
+                    fseek(rightMetaPointer,metaArray[i]+fileNameSizeArray[i],SEEK_CUR);
+
+                writeMetaData(leftMetaPointer,out,sizeOfOut);
+
+                for(unsigned int i=rightIndex+1; i < countOfFiles; i++)
+			        replaceSeq(leftMetaPointer,rightMetaPointer,metaArray[i]+fileNameSizeArray[i]);
+
+				fseek(leftMetaPointer,0,SEEK_SET);
+                updateNoOfFilesInDisk(leftMetaPointer,getNoOfFilesInDisk(leftMetaPointer)-(rightIndex-leftIndex));
+
+				free(out);
+
+				return;
+            }
+			else
+			{
+				flag = 0; 
+				newSumSize.num = 0;
+			}
+        }
+    }
+}
+
+
+/* Here the Whole Data About the Files in Disk is loaded to the Arrays */
+void createMetaTable(FILE * metaDataPointer, unsigned long long int fileSizeArray[], int fileNameSizeArray[], int metaArray[], unsigned int countOfFiles)
+{
+    fseek(metaDataPointer,4,SEEK_SET);
+    for(int i=0;i<countOfFiles;i++)
+    {
+        fileSizeArray[i] = decode(metaDataPointer);
+        metaArray[i] = calCountOfBytesSeq(fileSizeArray[i]);
+        if(fgetc(metaDataPointer)!=0)
+			fileNameSizeArray[i] = getLengthOfFileName(metaDataPointer) + 1;
+		else
+			fileNameSizeArray[i] = 1;
+    }
+
+    fseek(metaDataPointer,4,SEEK_SET);
+
+    /*for(int i=0;i<countOfFiles;i++)
+        printf("%llu\t%d\t%d\n",fileSizeArray[i],fileNameSizeArray[i],metaArray[i]);*/
+}
+
+/* It is the Function which Provides the Environment for merger of two consecutive Holes */
+void mergeConsecutiveHoles(const char * vDisk)
+{
+    FILE * countPointer = fopen(vDisk,"r+");
+
+    FILE * leftMetaPointer = fopen(vDisk,"r+");
+
+    FILE * rightMetaPointer = fopen(vDisk,"r");
+
+	unsigned int countOfFiles = getNoOfFilesInDisk(countPointer);
+
+    unsigned long long int fileSizeArray[countOfFiles];
+
+    int fileNameSizeArray[countOfFiles], metaArray[countOfFiles];
+
+    createMetaTable(rightMetaPointer,fileSizeArray,fileNameSizeArray,metaArray,countOfFiles);
+
+    mergeHoles(leftMetaPointer,rightMetaPointer,fileSizeArray,fileNameSizeArray, metaArray,countOfFiles);
+
+    fclose(countPointer);
+
+    fclose(leftMetaPointer);
+
+    fclose(rightMetaPointer);
+    
 }
