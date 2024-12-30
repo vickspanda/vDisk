@@ -13,27 +13,22 @@
 int printFileName(FILE *fileNamePointer)
 {
 	char ch;
-	int count = 0;
 	while((ch=fgetc(fileNamePointer))!='\0')
-	{
 		printf("%c",ch);
-		count++;
-	}
-	fseek(fileNamePointer,-(count+1),SEEK_CUR);
 	printf("\n");
 }
 
 /* listFileNames displays all the Files Exists in the Virtual Disk by Setting the Pointer At the End of the File Name, Then at start and pass it
  * to printFileName Function
  */
-int listFileNames(FILE *fileDataPointer, FILE *encodedSeqPointer, unsigned int countOfFiles)
+int listFileNames(FILE *metaDataPointer, unsigned int countOfFiles)
 {
 	unsigned long long int curFileSize;
-	fseek(encodedSeqPointer,4,SEEK_CUR);
+	fseek(metaDataPointer,4,SEEK_SET);
 	for(int i = 0; i < countOfFiles; i++){
-		curFileSize = decode(encodedSeqPointer);
-		fseek(fileDataPointer,-curFileSize,SEEK_CUR);
-		printFileName(fileDataPointer);
+		curFileSize = decode(metaDataPointer);
+		if(fgetc(metaDataPointer)==1)
+			printFileName(metaDataPointer);
 	}
 }
 
@@ -54,33 +49,27 @@ int main(int argc, char *argv[])
 	/* File Pointers for file's names*/
 	FILE *countPointer = fopen(argv[1],"r");
 	
-	FILE *fileDataPointer = fopen(argv[1],"r");
-	
-	FILE *encodedSeqPointer = fopen(argv[1],"r");
+	FILE *metaDataPointer = fopen(argv[1],"r");
 	
 	unsigned int countOfFiles;
 	
 	countOfFiles = getNoOfFilesInDisk(countPointer);
 	// getNoOfFilesInDisk returns count of Existing Files in the Virtual Disk
 	
-	if(countOfFiles == 0)
+	if(countOfFiles == getNoOfHolesInDisk(metaDataPointer,countOfFiles))
 	{
 		printf("Disk is Empty !!!\n");
 	}
 	else{
 		printf("Disk Name:\t%s\nFiles In Disk are:\n",argv[1]);
 		
-		fseek(fileDataPointer,0,SEEK_END);
-		
 		// listFileNames displays all the Files Exists in the Virtual Disk
-		listFileNames(fileDataPointer, encodedSeqPointer, countOfFiles);
-	
+		listFileNames(metaDataPointer, countOfFiles);
 	}
 	
 	/* CLosing All File Pointers */
 	
-	fclose(fileDataPointer);
-	fclose(encodedSeqPointer);
+	fclose(metaDataPointer);
 	
 	return 0;
 	

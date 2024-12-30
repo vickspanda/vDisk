@@ -31,30 +31,32 @@ int main(int argc, char *argv[])
 	/* Disk Pointer for Disk's Details*/
 	FILE *countPointer = fopen(argv[1],"r");
 	
-	FILE *encodedSeqPointer = fopen(argv[1],"r");
+	FILE *metaDataPointer = fopen(argv[1],"r");
 	
-	unsigned int countOfFiles;
+	unsigned int countOfFiles, countOfHoles;
 	
 	countOfFiles = getNoOfFilesInDisk(countPointer);
 	// getNoOfFilesInDisk returns count of Existing Files in the Virtual Disk
 	
-	unsigned long long int usedSpace;
+	unsigned long long int usedSpace, holesSpace;
 		
-	usedSpace = getUsedSpace(encodedSeqPointer, countOfFiles);	
+	usedSpace = getUsedSpace(metaDataPointer, countOfFiles);	
+	holesSpace = getHolesSpace(metaDataPointer, countOfFiles);	
+
 	/*
 	 * getUsedSpace Function returns the usedSpace in Virtual Disk whose file Pointer was provided as an input to it
 	 */
-	printf("Used Space:\t%llu bytes\n",usedSpace);
+	printf("Used Space:\t%llu bytes\n",usedSpace - holesSpace);
 	
 	/*
 	 * getFreeSpace Function returns the Free Space available in Virtual Disk whose file Pointer was provided as an input to it
 	 */
-	printf("Free Space:\t%llu bytes\n",getFreeSpace(usedSpace ,argv[1]));
+	printf("Free Space:\t%llu bytes\n",getFreeSpace(usedSpace ,argv[1]) + holesSpace);
 	
 	/* CLosing Disk Pointer */
 	fclose(countPointer);
 	
-	fclose(encodedSeqPointer);
+	fclose(metaDataPointer);
 	
 	return 0;
 }
