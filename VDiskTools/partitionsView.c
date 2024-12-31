@@ -5,6 +5,8 @@
 #include"helper-tools/vDisk.c"
 #include"helper-tools/deFrag.c"
 
+
+/* It is the Program to Print the Information of the Partitions created for Storing the Files or Holes */
 void main(int argc, char *argv[])
 {
     FILE * countPointer = fopen(argv[1],"r+");
