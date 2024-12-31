@@ -11,6 +11,7 @@ This project implements a **Virtual Disk File System** that allows users to crea
 - **vdGet**: Retrieve files from the virtual disk to the current directory.
 - **vdRename**: Renames files from old name to new name in the virtual disk with automatic space defragmentation.
 - **vdDelete**: Delete files from the virtual disk, leaving holes that can later be merged during file addition.
+- **vdView**: View the information of the partitions created for storing the files or holes.
 
 ## Installation
 
@@ -116,6 +117,19 @@ Example:
 ./.vdDelete myDisk file1.txt
 ```
 After deletion, the disk will have a "hole" in the space previously occupied by the deleted file. These holes are later merged during file addition operations to ensure efficient use of space.
+
+### 8. View Partitions in the Virtual Disk
+To view the information of the partitions created for storing the files or holes:
+
+```bash
+./.vdView <your-disk>
+```
+
+Example:
+```bash
+./.vdView myDisk
+```
+This will display details about partitions, including file locations and sizes, as well as holes present in the disk.
 
 ## Notes
 
