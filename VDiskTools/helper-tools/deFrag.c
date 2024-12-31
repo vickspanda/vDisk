@@ -100,7 +100,7 @@ struct node * getMinSwapCostNode(unsigned long long int fileSizeArray[], int fil
             }
         }
         holesComb = holesComb->next;
-        printf("%llu\n",swapCost);
+        //printf("%llu\n",swapCost);
     }
 
     return minSwapCostNode;
@@ -123,7 +123,7 @@ struct node* getCombinations(union decStore fileSize, unsigned int countOfHoles,
 
         if(buffer >= fileSize.num)
         {
-            printf("%llu\n",buffer);
+            //printf("%llu\n",buffer);
             holeCombs = insertNode(holeCombs,holesArray[leftIndex],holesArray[rightIndex]);
             buffer = 0;
             leftIndex++;
@@ -151,11 +151,11 @@ struct node * getIndexesForDeFrag(const char *vDisk, union decStore fileSize,FIL
 
     struct node* holeCombs = getCombinations(fileSize,countOfHoles,fileSizeArray,holesArray);
 
-    printLL(holeCombs);
+    //printLL(holeCombs);
 
     holeCombs = getMinSwapCostNode(fileSizeArray,fileNameSizeArray,holeCombs);
 
-    printf("Left Index : %d\t Right Index : %d\n\n\n",holeCombs->leftIndex,holeCombs->rightIndex);
+    //printf("Left Index : %d\t Right Index : %d\n\n\n",holeCombs->leftIndex,holeCombs->rightIndex);
 
     return holeCombs;
 
@@ -242,6 +242,8 @@ void swapMetaData(unsigned long long int fileSizeArray[],int fileNameSizeArray[]
         for(int j = 0; j < metaBytes[i]; j++)
             fputc(metaData[i][j],leftMetaPointer);
 
+    for(int i = 0; i < countOfNonHoles; i++)
+        metaData[i] = NULL;
     
 }
 
@@ -380,7 +382,10 @@ void updateMetaData(FILE *leftMetaPointer,FILE *rightMetaPointer,char *outOfFile
         	skipName(leftMetaPointer);
     }
 
-    fseek(rightMetaPointer,(sizeOfOutOfFileSize + sizeOfOutOfNewHoleSize + strlen(inputFileName) + 3) - bytes,SEEK_CUR);
+    if(sizeOfOutOfNewHoleSize > 0)
+        fseek(rightMetaPointer,(sizeOfOutOfFileSize + sizeOfOutOfNewHoleSize + strlen(inputFileName) + 3) - bytes,SEEK_CUR);
+    else
+        fseek(rightMetaPointer,(sizeOfOutOfFileSize + strlen(inputFileName) + 2) - bytes,SEEK_CUR);
 
     for(unsigned int i=countOfFiles-1; i > index; i--){
 		fseek(leftMetaPointer,-1,SEEK_CUR);
@@ -392,10 +397,13 @@ void updateMetaData(FILE *leftMetaPointer,FILE *rightMetaPointer,char *outOfFile
 		for(int i = 0; i < index; i++)
 			fseek(leftMetaPointer,metaDataSize[i],SEEK_CUR);
 
-    for(int i = 0; i < sizeOfOutOfNewHoleSize; i++)
-        fputc(*(outOfNewHoleSize + i),leftMetaPointer);
+    if(sizeOfOutOfNewHoleSize > 0)
+    {
+        for(int i = 0; i < sizeOfOutOfNewHoleSize; i++)
+            fputc(*(outOfNewHoleSize + i),leftMetaPointer);
     
-    fputc('\0',leftMetaPointer);
+        fputc('\0',leftMetaPointer);
+    }
 
     for(int i = 0; i < sizeOfOutOfFileSize; i++)
         fputc(*(outOfFileSize + i),leftMetaPointer);
@@ -430,20 +438,35 @@ void addFileAtIndex(const char * vDisk, union decStore fileSize, const char * in
     {
         storeDataInHoleAtIndex(dataPointer,leftMetaPointer,fileSize.num,inputFileName,index);
         char *outOfFileSize = (unsigned char *)calloc(11,sizeof(unsigned char));
+        unsigned int sizeOfOutOfFileSize, sizeOfOutOfNewHoleSize = 0;
+        
         char *outOfNewHoleSize = (unsigned char *)calloc(11,sizeof(unsigned char));
-        unsigned int sizeOfOutOfFileSize, sizeOfOutOfNewHoleSize;
 
         union decStore newHoleSize;
         newHoleSize.num = holeSize - fileSize.num;
 
 		sizeOfOutOfFileSize = bitsToBytes(getEncodedSeqOfFileSize(outOfFileSize,fileSize));
-		sizeOfOutOfNewHoleSize = bitsToBytes(getEncodedSeqOfFileSize(outOfNewHoleSize,newHoleSize));
+
+        if(newHoleSize.num > 0)
+    		sizeOfOutOfNewHoleSize = bitsToBytes(getEncodedSeqOfFileSize(outOfNewHoleSize,newHoleSize));
         
         updateMetaData(leftMetaPointer,rightMetaPointer,outOfFileSize,sizeOfOutOfFileSize,outOfNewHoleSize,sizeOfOutOfNewHoleSize,inputFileName,countOfFiles,index);
 
+        if(newHoleSize.num > 0)
+            updateNoOfFilesInDisk(countPointer,countOfFiles + 1);
+
         free(outOfFileSize);
         free(outOfNewHoleSize);
+		printf("Success : %s Added Successfully !!!\n",inputFileName);
     } 
+
+    fclose(countPointer);
+    
+    fclose(leftMetaPointer);
+    
+    fclose(rightMetaPointer);
+    
+    fclose(dataPointer);
 }
 
 

@@ -130,7 +130,7 @@ bool canBeAdded(const char *vDiskName, unsigned long long int fileSize, FILE *me
 */
 bool canBeAddedInHoles(const char *vDiskName, unsigned long long int fileSize, FILE *metaDataPointer, unsigned int countOfFiles, const char *inputFileName)
 {
-	return getHolesSpace(metaDataPointer,countOfFiles)  >= (getReqSpace(fileSize,inputFileName) - calCountOfBytesSeq(fileSize));
+	return getHolesSpace(metaDataPointer,countOfFiles)  >= fileSize;
 }
 
 /*
@@ -411,9 +411,12 @@ void mergeHoles(FILE * leftMetaPointer, FILE * rightMetaPointer, unsigned long l
         if(fileNameSizeArray[i]==1 && flag == 1)
             newSumSize.num = newSumSize.num + fileSizeArray[i];
 
-        if(fileNameSizeArray[i]!=1 && flag==1)
+        if((fileNameSizeArray[i]!=1 || i == countOfFiles-1) && flag==1)
         {
-            rightIndex = i-1;
+			if(fileNameSizeArray[i]!=1)
+            	rightIndex = i-1;
+			else if( i == countOfFiles-1)
+				rightIndex = i;
 
             if(leftIndex < rightIndex)
             {   
